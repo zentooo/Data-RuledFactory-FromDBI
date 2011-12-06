@@ -1,39 +1,83 @@
-This is Perl module Data::RuledFactory::FromDBI.
+NAME
+    Data::RuledFactory::FromDBI - subclass of Data::RuledFactory for
+    creating rule from DBI fuzzily.
 
-INSTALLATION
+VERSION
+    This document describes Data::RuledFactory::FromDBI version 0.01.
 
-Type the following command:
+SYNOPSIS
+        # assume that you have a table on your DB such like this:
 
-    $ curl -L http://cpanmin.us | perl - Data::RuledFactory::FromDBI
+        ---- TODO
 
-Or install cpanm and then run the following command to install
-Data::RuledFactory::FromDBI:
 
-    $ cpanm Data::RuledFactory::FromDBI
+        use Data::RuledFactory::FromDBI;
 
-If you get an archive of this distribution, unpack it and build it
-as per the usual:
+        # ... and have the dbh for that DB.
+        my $rf = Data::RuledFactory::FromDBI->new(dbh => $dbh);
 
-    $ tar xzf Data-RuledFactory-FromDBI-$version.tar.gz
-    $ cd Data-RuledFactory-FromDBI-$version
-    $ perl Makefile.PL
-    $ make && make test
+        # you need not to define all rules for each column manually.
+        # define the rules only you need.
 
-Then install it:
+        $rf->from_table("article", +{
+            published_on => [
+                RangeRandom =>+{
+                    min => DateTime->new( year => 2011, month => 12, day => 1 )->epoch,
+                    max => DateTime->new( year => 2011, month => 12, day => 24 )->epoch,
+                    incremental => 1,
+                    integer => 1,
+                }
+            ]
+        });
 
-    $ make install
+        while ( $rf->has_next ) {
+            my $d = $rf->next;
+            # insert auto-generated data to DB with DBI or whatelse.
+        }
 
-DOCUMENTATION
 
-Data::RuledFactory::FromDBI documentation is available as in POD. So you can do:
+        ### If insertion failed somehow ( because of DB's constraint ? )
+        ### then you define a rule manually :)
 
-    $ perldoc Data::RuledFactory::FromDBI
+        $rf->from_table("article", +{
+            published_on => [
+                RangeRandom =>+{
+                    min => DateTime->new( year => 2011, month => 12, day => 1 )->epoch,
+                    max => DateTime->new( year => 2011, month => 12, day => 24 )->epoch,
+                    incremental => 1,
+                    integer => 1,
+                }
+            ],
+            status => [
+                ListRandom => { data => [0, 1, 2] } ];
+            ]
+        });
 
-to read the documentation online with your favorite pager.
+DESCRIPTION
+    # TODO
+
+INTERFACE
+  Functions
+   "hello()"
+    # TODO
+
+DEPENDENCIES
+    Perl 5.8.1 or later.
+
+BUGS
+    All complex software has bugs lurking in it, and this module is no
+    exception. If you find a bug please either email me, or add the bug to
+    cpan-RT.
+
+SEE ALSO
+    perl
+
+AUTHOR
+    zentooo <ankerasoy@gmail.com>
 
 LICENSE AND COPYRIGHT
+    Copyright (c) 2011, zentooo. All rights reserved.
 
-Copyright (c) 2011, zentooo. All rights reserved.
+    This library is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.

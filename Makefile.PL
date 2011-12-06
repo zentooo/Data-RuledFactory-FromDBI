@@ -9,6 +9,7 @@ BEGIN {
         inc::Module::Install             1.00
         Module::Install::AuthorTests     0.002
         Module::Install::Repository      0.06
+        Module::Install::ReadmeFromPod   0.12
         Test::Requires                   0.06
     );
     my @not_available;
@@ -25,7 +26,7 @@ BEGIN {
 use inc::Module::Install;
 
 all_from 'lib/Data/RuledFactory/FromDBI.pm';
-
+readme_from 'lib/Data/RuledFactory/FromDBI.pm';
 
 test_requires 'Test::More'     => '0.88';
 test_requires 'Test::Requires' => '0.06';
@@ -34,7 +35,6 @@ auto_set_repository;
 
 tests_recursive;
 author_tests 'xt';
-
 
 clean_files qw(
     Data-RuledFactory-FromDBI-*
