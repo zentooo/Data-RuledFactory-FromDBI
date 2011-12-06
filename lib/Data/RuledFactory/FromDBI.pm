@@ -3,10 +3,12 @@ use 5.008_001;
 use strict;
 use warnings;
 
-use Data::RuledFactory;
-use DBIx::Inspector;
+use Carp qw/croak/;
 
-use parent qw/Class::Delegate/;
+use DBIx::Inspector;
+use Time::Piece::MySQL;
+
+use parent qw/Data::RuledFactory/;
 
 our $VERSION = '0.01';
 
@@ -16,22 +18,19 @@ sub new {
 
     my $dbh;
 
-    if ( $dbh = delete $opts->{dbh} ) {
+    if ( ! ($dbh = delete $opts->{dbh}) ) {
         croak "mandatory parameter dbh missing.";
     }
 
     $opts->{inspector} = DBIx::Inspector->new(dbh => $dbh);
-    $opts->{factory} = Data::RuledFactory->new($opts);
 
-    my $self = bless $opts, $class;
-
-    $self->add_delegate($opts->{factory});
+    my $self = $class->SUPER::new($opts);
 
     return $self;
 }
 
 sub from_table {
-    my ($table, $params) = @_;
+    my ($self, $table, $params) = @_;
 
     my @columns = $self->{inspector}->columns($table);
 
@@ -53,23 +52,23 @@ sub _rule_from_column {
         return [ Sequence => { min => 1, step => 1 } ];
     }
     # looks like float
-    elsif ( $column->data_type == 6 || $column->data_type == 8 ) {
-        return [ RangeRandom => { min => 1.0, max => 99999999.9 } ];
+    elsif ( 6 <= $column->data_type && $column->data_type <= 8 ) {
+        return [ RangeRandom => { min => 1.0, max => 9999.9 } ];
     }
     # looks like string
     elsif ( $column->data_type == 1 || $column->data_type == 12 ) {
         return [ StringRandom => { data => q{\w\w\w\w} } ];
     }
     # looks like date
-    elsif ( $column->data_type == 9 ) {
+    elsif ( $column->data_type == 9 || $column->data_type == 91 ) {
         return sub { localtime()->mysql_date; };
     }
     # looks like time
-    elsif ( $column->data_type == 10 ) {
+    elsif ( $column->data_type == 10 || $column->data_type == 92 ) {
         return sub { localtime()->mysql_time; };
     }
     # looks like datetime or timestamp
-    elsif ( $column->data_type == 11 ) {
+    elsif ( $column->data_type == 11 || $column->data_type == 93 ) {
         return sub { localtime()->mysql_datetime; };
     }
     else {
@@ -83,7 +82,7 @@ __END__
 
 =head1 NAME
 
-Data::RuledFactory::FromDBI - Perl extention to do something
+Data::RuledFactory::FromDBI - subclass of Data::RuledFactory for creating rule from DBI fuzzily.
 
 =head1 VERSION
 
@@ -91,7 +90,52 @@ This document describes Data::RuledFactory::FromDBI version 0.01.
 
 =head1 SYNOPSIS
 
+    # assume that you have a table on your DB such like this:
+
+    ---- TODO
+
+
     use Data::RuledFactory::FromDBI;
+
+    # ... and have the dbh for that DB.
+    my $rf = Data::RuledFactory::FromDBI->new(dbh => $dbh);
+
+    # you need not to define all rules for each column manually.
+    # define the rules only you need.
+
+    $rf->from_table("article", +{
+        published_on => [
+            RangeRandom =>+{
+                min => DateTime->new( year => 2011, month => 12, day => 1 )->epoch,
+                max => DateTime->new( year => 2011, month => 12, day => 24 )->epoch,
+                incremental => 1,
+                integer => 1,
+            }
+        ]
+    });
+
+    while ( $rf->has_next ) {
+        my $d = $rf->next;
+        # insert auto-generated data to DB with DBI or whatelse.
+    }
+
+
+    ### If insertion failed somehow ( because of DB's constraint ? )
+    ### then you define a rule manually :)
+
+    $rf->from_table("article", +{
+        published_on => [
+            RangeRandom =>+{
+                min => DateTime->new( year => 2011, month => 12, day => 1 )->epoch,
+                max => DateTime->new( year => 2011, month => 12, day => 24 )->epoch,
+                incremental => 1,
+                integer => 1,
+            }
+        ],
+        status => [
+            ListRandom => { data => [0, 1, 2] } ];
+        ]
+    });
 
 =head1 DESCRIPTION
 
