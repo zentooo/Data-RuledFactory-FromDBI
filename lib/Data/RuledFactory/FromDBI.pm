@@ -3,7 +3,79 @@ use 5.008_001;
 use strict;
 use warnings;
 
+use Data::RuledFactory;
+use DBIx::Inspector;
+
+use parent qw/Class::Delegate/;
+
 our $VERSION = '0.01';
+
+sub new {
+    my $class = shift;
+    my $opts = ref $_[0] ? $_[0] : +{@_};
+
+    my $dbh;
+
+    if ( $dbh = delete $opts->{dbh} ) {
+        croak "mandatory parameter dbh missing.";
+    }
+
+    $opts->{inspector} = DBIx::Inspector->new(dbh => $dbh);
+    $opts->{factory} = Data::RuledFactory->new($opts);
+
+    my $self = bless $opts, $class;
+
+    $self->add_delegate($opts->{factory});
+
+    return $self;
+}
+
+sub from_table {
+    my ($table, $params) = @_;
+
+    my @columns = $self->{inspector}->columns($table);
+
+    for my $column (@columns) {
+        if ( $params->{$column->name} ) {
+            $self->add_rule($params->{$column->name});
+        }
+        else {
+            $self->add_rule($column->name, $self->_rule_from_column($column));
+        }
+    }
+}
+
+sub _rule_from_column {
+    my ($self, $column) = @_;
+
+    # looks like integer
+    if ( $column->data_type == 4 ) {
+        return [ Sequence => { min => 1, step => 1 } ];
+    }
+    # looks like float
+    elsif ( $column->data_type == 6 || $column->data_type == 8 ) {
+        return [ RangeRandom => { min => 1.0, max => 99999999.9 } ];
+    }
+    # looks like string
+    elsif ( $column->data_type == 1 || $column->data_type == 12 ) {
+        return [ StringRandom => { data => q{\w\w\w\w} } ];
+    }
+    # looks like date
+    elsif ( $column->data_type == 9 ) {
+        return sub { localtime()->mysql_date; };
+    }
+    # looks like time
+    elsif ( $column->data_type == 10 ) {
+        return sub { localtime()->mysql_time; };
+    }
+    # looks like datetime or timestamp
+    elsif ( $column->data_type == 11 ) {
+        return sub { localtime()->mysql_datetime; };
+    }
+    else {
+        return [ Sequence => { min => 1, step => 1 } ];
+    }
+}
 
 
 1;
