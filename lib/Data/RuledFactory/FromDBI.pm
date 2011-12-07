@@ -90,18 +90,30 @@ This document describes Data::RuledFactory::FromDBI version 0.01.
 
 =head1 SYNOPSIS
 
-    # assume that you have a table on your DB such like this:
+    # assume that you have a table `article` on your DB such like this:
+    +--------------------------+---------------------+------+-----+---------+-------+
+    | Field                    | Type                | Null | Key | Default | Extra |
+    +--------------------------+---------------------+------+-----+---------+-------+
+    | id                       | int(10) unsigned    | NO   | PRI | NULL    |       |
+    | status                   | tinyint(1) unsigned | NO   |     | NULL    |       |
+    | content                  | text                | NO   |     | NULL    |       |
+    | published_on             | int(10) unsigned    | NO   |     | NULL    |       |
+    | created_on               | int(10) unsigned    | NO   |     | NULL    |       |
+    | updated_on               | int(10) unsigned    | NO   |     | NULL    |       |
+    | ...                      | ...                 | NO   |     | NULL    |       |
+    | ...                      | ...                 | NO   |     | NULL    |       |
+    | ...                      | ...                 | NO   |     | NULL    |       |
+    +--------------------------+---------------------+------+-----+---------+-------+
 
-    ---- TODO
 
+    # ... and have the dbh for that DB.
 
     use Data::RuledFactory::FromDBI;
 
-    # ... and have the dbh for that DB.
     my $rf = Data::RuledFactory::FromDBI->new(dbh => $dbh);
 
-    # you need not to define all rules for each column manually.
-    # define the rules only you need.
+    # You need not to define all rules for each column.
+    # Define the rules only you need. Rules for omitted columns will be auto-generated fuzzily.
 
     $rf->from_table("article", +{
         published_on => [
