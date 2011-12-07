@@ -125,6 +125,7 @@ This document describes Data::RuledFactory::FromDBI version 0.01.
             }
         ]
     });
+    $rf->rows(100);
 
     while ( $rf->has_next ) {
         my $d = $rf->next;
