@@ -1,7 +1,6 @@
 #!perl -w
 use strict;
 use Test::More;
-use Test::Name::FromLine;
 
 use Test::Mock::Guard;
 use Data::Util qw/:check/;

@@ -28,8 +28,15 @@ use inc::Module::Install;
 all_from 'lib/Data/RuledFactory/FromDBI.pm';
 readme_from 'lib/Data/RuledFactory/FromDBI.pm';
 
+requires 'Data::RuledFactory';
+requires 'DBIx::Inspector';
+requires 'Time::Piece::MySQL';
+
 test_requires 'Test::More'     => '0.88';
 test_requires 'Test::Requires' => '0.06';
+
+test_requires 'Test::Mock::Guard';
+test_requires 'Data::Util';
 
 auto_set_repository;
 
